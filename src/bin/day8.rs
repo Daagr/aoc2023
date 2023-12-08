@@ -36,7 +36,7 @@ fn follow(directions: &str, nodes: &HashMap<String, Node>) -> usize{
 }
 
 fn main() -> Result<(), Box<dyn Error>>{
-    let filename = std::env::args().nth(2).unwrap_or_else(||"data/day8.txt".into());
+    let filename = std::env::args().nth(1).unwrap_or_else(||"data/day8.txt".into());
     let mut lines = std::io::BufReader::new(std::fs::File::open(&filename)?).lines();
     let directions = lines.next().ok_or("empty file")??;
     lines.next(); // drop empty line
