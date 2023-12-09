@@ -1,12 +1,12 @@
 use std::{collections::HashMap, error::Error, io::BufRead, str::FromStr};
 
-use smol_str::SmolStr;
-
 #[derive(Clone, Debug)]
 struct Node {
-    name: SmolStr,
-    left: SmolStr,
-    right: SmolStr,
+    name: String,
+    left: String,
+    right: String,
+    left_id: usize,
+    right_id: usize,
 }
 
 impl FromStr for Node {
@@ -24,47 +24,42 @@ impl FromStr for Node {
             name: name.into(),
             left: left.into(),
             right: right.into(),
+            left_id: 0,
+            right_id: 0,
         })
     }
 }
 
-fn follow(directions: &str, nodes: &HashMap<SmolStr, Node>, first_part: bool) -> usize {
-    let mut current_nodes = Vec::new();
-    if first_part {
-        current_nodes.push(&nodes["AAA"]);
-    } else {
-        for (name, node) in nodes {
-            if name.ends_with('A') {
-                current_nodes.push(node);
-            }
+fn next_z(
+    directions: &str,
+    nodes: &Vec<Node>,
+    mut id: usize,
+    direction_offset: usize,
+) -> (usize, usize) {
+    let mut node = &nodes[id];
+    for (n, d) in std::iter::repeat(directions.chars())
+        .flatten()
+        .skip(direction_offset % directions.len())
+        .enumerate()
+    {
+        // if n < 10 {
+        //     println!("{n}, {d}, {id}, {node:?}");
+        // }
+        if n != 0 && node.name.ends_with('Z') {
+            return (n, id);
         }
-    }
-    let mut next_nodes;
-    for (n, d) in std::iter::repeat(directions.chars()).flatten().enumerate() {
-        if current_nodes.iter().all(|n| n.name.ends_with('Z')) {
-            return n;
-        }
-        next_nodes = Vec::with_capacity(current_nodes.len());
         match d {
-            'L' => {
-                for node in &current_nodes {
-                    next_nodes.push(&nodes[&node.left]);
-                }
-            }
-            'R' => {
-                for node in &current_nodes {
-                    next_nodes.push(&nodes[&node.right]);
-                }
-            }
+            'L' => id = node.left_id,
+            'R' => id = node.right_id,
             other => panic!("Unknown direction {}", other),
         }
-        std::mem::swap(&mut current_nodes, &mut next_nodes);
+        node = &nodes[id]
     }
     unreachable!();
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let first_part = match std::env::args().nth(2).as_deref(){
+    let first_part = match std::env::args().nth(2).as_deref() {
         None => true,
         Some("1" | "A" | "a") => true,
         Some("2" | "B" | "b") => false,
@@ -76,14 +71,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut lines = std::io::BufReader::new(std::fs::File::open(&filename)?).lines();
     let directions = lines.next().ok_or("empty file")??;
     lines.next(); // drop empty line
-    let mut nodes = HashMap::<SmolStr, _>::new();
+    let mut nodes = Vec::new();
+    let mut node_names_to_id = HashMap::new();
     for line in lines {
         let line = line?;
         let node: Node = line.parse()?;
-        //println!("{node:?}");
-        nodes.insert(node.name.clone(), node);
+        node_names_to_id.insert(node.name.clone(), nodes.len());
+        nodes.push(node);
     }
-    let steps = follow(&directions, &nodes, first_part);
-    println!("Took {steps} steps");
+    for node in nodes.iter_mut() {
+        node.left_id = node_names_to_id[&node.left];
+        node.right_id = node_names_to_id[&node.right];
+    }
+    //let steps = follow(&directions, &nodes, first_part);
+    let (steps, z_id) = next_z(&directions, &nodes, node_names_to_id["AAA"], 0);
+    println!(
+        "Took {steps} steps to find {:?} at {z_id} out of {}",
+        nodes[z_id],
+        nodes.len()
+    );
+
+    let (nsteps, nz_id) = next_z(&directions, &nodes, z_id, steps);
+    println!(
+        "Then it took {nsteps} steps to find {:?} at {nz_id}",
+        nodes[nz_id]
+    );
     return Ok(());
 }
