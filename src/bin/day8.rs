@@ -42,9 +42,6 @@ fn next_z(
         .skip(direction_offset % directions.len())
         .enumerate()
     {
-        // if n < 10 {
-        //     println!("{n}, {d}, {id}, {node:?}");
-        // }
         if n != 0 && node.name.ends_with('Z') {
             return (n, id);
         }
@@ -56,20 +53,6 @@ fn next_z(
         node = &nodes[id]
     }
     unreachable!();
-}
-
-fn allsame<Iter, Elem>(mut iter: Iter) -> bool
-where
-    Iter: Iterator<Item = Elem>,
-    Elem: Eq,
-{
-    let first = iter.next().expect("At least one eleemnte in allsame");
-    for elem in iter {
-        if elem != first {
-            return false;
-        }
-    }
-    return true;
 }
 
 fn part2(directions: String, nodes: &Vec<Node>) -> usize {
@@ -102,12 +85,7 @@ fn part2(directions: String, nodes: &Vec<Node>) -> usize {
         if ids_steps_offsets.first().unwrap().1 == ids_steps_offsets.last().unwrap().1 {
             return ids_steps_offsets.first().unwrap().1;
         }
-        // println!("lstep {}", ids_steps_offsets.last().unwrap().1);
         let (first_id, first_step, first_offset) = &mut ids_steps_offsets[0];
-        // println!(
-        //     "fid {}, fstep {}, foffset {}",
-        //     first_id, first_step, first_offset,
-        // );
         let (offset_, id_) = steps[*first_id][*first_offset];
         *first_id = id_;
         *first_step += offset_;
@@ -141,19 +119,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         node.right_id = node_names_to_id[&node.right];
     }
 
-    //let steps = follow(&directions, &nodes, first_part);
     if first_part {
         let (steps, z_id) = next_z(&directions, &nodes, node_names_to_id["AAA"], 0);
         println!(
             "Took {steps} steps to find {:?} at {z_id} out of {}",
             nodes[z_id],
             nodes.len()
-        );
-
-        let (nsteps, nz_id) = next_z(&directions, &nodes, z_id, steps);
-        println!(
-            "Then it took {nsteps} steps to find {:?} at {nz_id}",
-            nodes[nz_id]
         );
     } else {
         let steps = part2(directions, &nodes);
